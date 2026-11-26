@@ -60,7 +60,7 @@
     }
     .skin-card {
       background: #ffffff;
-      transition: background-color 0.18s ease;
+      transition: background-color 0.18s ease, opacity 0.18s ease;
     }
     .skin-card:hover {
       background: var(--ice);
@@ -70,6 +70,10 @@
     }
     .skin-card img {
       transition: transform 0.25s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+    .skin-card.unselected {
+      background: #fafafa;
+      opacity: 0.65;
     }
   </style>
 </head>
@@ -197,7 +201,6 @@
               <span class="text-[10px] uppercase text-neutral-600">1-CLICK CLIPBOARD</span>
             </div>
 
-            <!-- INPUT + TOMBOL PASTE OTOMATIS -->
             <div class="flex items-stretch mb-3">
               <input
                 id="redirectUrl"
@@ -255,11 +258,30 @@
       </div>
     </section>
 
-    <!-- CATALOG GRID SECTION (4 SKIN CARDS) -->
+    <!-- CATALOG GRID SECTION (4 SKIN CARDS + VP CALCULATOR BAR) -->
     <section id="catalogSection" class="bg-white">
-      <div class="px-6 py-4 border-b-[1.5px] border-black flex items-center justify-between">
-        <h2 class="font-editorial font-extrabold text-lg sm:text-xl tracking-tight">Featured Weapon Offers</h2>
-        <span id="itemCount" class="text-[11px] uppercase underline font-bold">WAITING FOR TOKEN</span>
+      <div class="px-6 py-4 border-b-[1.5px] border-black flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div class="flex items-center gap-3">
+          <h2 class="font-editorial font-extrabold text-lg sm:text-xl tracking-tight">Featured Weapon Offers</h2>
+          <span id="itemCount" class="text-[11px] uppercase underline font-bold text-neutral-500">WAITING FOR TOKEN</span>
+        </div>
+
+        <!-- TOTAL VP CALCULATOR WIDGET (MUNCUL SAAT DATA LOADED) -->
+        <div id="vpCalcBar" class="hidden flex flex-wrap items-center gap-2 text-xs">
+          <button
+            type="button"
+            onclick="toggleSelectAll()"
+            id="toggleAllBtn"
+            class="border border-black bg-white hover:bg-neutral-200 px-2.5 py-1 text-[10px] font-bold uppercase cursor-pointer"
+          >
+            DESELECT ALL
+          </button>
+          <div class="border-[1.5px] border-black bg-[#e2ff00] px-3 py-1 font-bold uppercase tracking-wider flex items-center gap-2">
+            <span id="selectedCountText" class="text-[10px]">4/4 SELECTED</span>
+            <span>//</span>
+            <span id="totalVpText">0 VP</span>
+          </div>
+        </div>
       </div>
 
       <!-- PLACEHOLDER STATE SEBELUM CEK -->
@@ -323,7 +345,6 @@
       </div>
 
       <div class="space-y-4 text-xs">
-        <!-- STEP 1 VISUAL -->
         <div class="bg-white border-[1.5px] border-black p-3.5">
           <div class="flex items-center justify-between mb-1.5">
             <span class="bg-[#e2ff00] border border-black px-2 py-0.5 font-bold">01 // LOGIN AKUN RIOT</span>
@@ -334,13 +355,11 @@
           </p>
         </div>
 
-        <!-- STEP 2 VISUAL (MOCKUP BROWSER 404) -->
         <div class="bg-white border-[1.5px] border-black p-3.5">
           <div class="flex items-center justify-between mb-2">
             <span class="bg-[#e2ff00] border border-black px-2 py-0.5 font-bold">02 // SALIN URL DI HALAMAN 404</span>
             <span class="text-[10px] text-neutral-500">INI NORMAL!</span>
           </div>
-          <!-- Mockup Address Bar -->
           <div class="border border-black bg-[#e8eef5] p-2 mb-2">
             <div class="flex items-center gap-1.5 mb-1.5">
               <span class="w-2 h-2 rounded-full bg-black"></span>
@@ -356,7 +375,6 @@
           </p>
         </div>
 
-        <!-- STEP 3 VISUAL -->
         <div class="bg-white border-[1.5px] border-black p-3.5">
           <div class="flex items-center justify-between mb-1.5">
             <span class="bg-[#e2ff00] border border-black px-2 py-0.5 font-bold">03 // KLIK "PASTE & CHECK"</span>
@@ -378,8 +396,31 @@
     const API_URL = "https://byebyeval-api.afsamifzal.workers.dev";
     const SESSION_KEY = "byebyeval_last_session";
     let countdownInterval = null;
+    let currentItems = [];
+    let selectedIndices = new Set();
 
-    // Modal Controls
+    // Peta Tier Resmi Valorant (contentTierUuid)
+    const TIER_MAP = {
+      "12683d76-48d7-84a3-4e09-6985794f0445": { name: "SELECT", bg: "#5a9fe2", text: "#000000" },
+      "0cebb8be-46d7-c12a-d306-e9907bfc5a25": { name: "DELUXE", bg: "#00b589", text: "#000000" },
+      "60bca009-4182-7998-dee7-b8a2558dc369": { name: "PREMIUM", bg: "#d1548d", text: "#ffffff" },
+      "e046854e-406c-37f4-6607-19a9ba8426fc": { name: "EXCLUSIVE", bg: "#f5955b", text: "#000000" },
+      "411e4a55-4e59-7757-41f0-86a53f101bb5": { name: "ULTRA", bg: "#fad663", text: "#000000" }
+    };
+
+    // Fallback deteksi tier dari harga VP jika Worker belum mengirim tierUuid
+    function getTierInfo(item) {
+      if (item.tierUuid && TIER_MAP[item.tierUuid]) {
+        return TIER_MAP[item.tierUuid];
+      }
+      const p = Number(item.price) || 0;
+      if (p <= 875) return TIER_MAP["12683d76-48d7-84a3-4e09-6985794f0445"];
+      if (p <= 1275) return TIER_MAP["0cebb8be-46d7-c12a-d306-e9907bfc5a25"];
+      if (p <= 1775) return TIER_MAP["60bca009-4182-7998-dee7-b8a2558dc369"];
+      if (p <= 2175) return TIER_MAP["e046854e-406c-37f4-6607-19a9ba8426fc"];
+      return TIER_MAP["411e4a55-4e59-7757-41f0-86a53f101bb5"];
+    }
+
     function openGuideModal() {
       document.getElementById("guideModal").classList.remove("hidden");
     }
@@ -389,7 +430,6 @@
       }
     }
 
-    // Live Countdown Timer (Detik demi detik)
     function startLiveTimer(targetTimestampMs) {
       if (countdownInterval) clearInterval(countdownInterval);
 
@@ -407,7 +447,64 @@
       countdownInterval = setInterval(updateTick, 1000);
     }
 
-    // Auto-Paste dari Clipboard + Langsung Inspect
+    // Update Kalkulator Total VP
+    function updateVpCalculator() {
+      let total = 0;
+      selectedIndices.forEach((idx) => {
+        if (currentItems[idx]) {
+          total += Number(currentItems[idx].price) || 0;
+        }
+      });
+
+      document.getElementById("selectedCountText").textContent = `${selectedIndices.size}/${currentItems.length} SELECTED`;
+      document.getElementById("totalVpText").textContent = `${total.toLocaleString("en-US")} VP`;
+      document.getElementById("toggleAllBtn").textContent =
+        selectedIndices.size === currentItems.length ? "DESELECT ALL" : "SELECT ALL";
+    }
+
+    // Toggle centang per kartu skin
+    function toggleSkinSelection(idx) {
+      const cardEl = document.getElementById(`skin-card-${idx}`);
+      const checkEl = document.getElementById(`skin-check-${idx}`);
+
+      if (selectedIndices.has(idx)) {
+        selectedIndices.delete(idx);
+        cardEl.classList.add("unselected");
+        checkEl.textContent = "";
+        checkEl.classList.remove("bg-[#e2ff00]");
+        checkEl.classList.add("bg-white");
+      } else {
+        selectedIndices.add(idx);
+        cardEl.classList.remove("unselected");
+        checkEl.textContent = "✓";
+        checkEl.classList.remove("bg-white");
+        checkEl.classList.add("bg-[#e2ff00]");
+      }
+      updateVpCalculator();
+    }
+
+    function toggleSelectAll() {
+      const selectAll = selectedIndices.size !== currentItems.length;
+      currentItems.forEach((_, idx) => {
+        const cardEl = document.getElementById(`skin-card-${idx}`);
+        const checkEl = document.getElementById(`skin-check-${idx}`);
+        if (selectAll) {
+          selectedIndices.add(idx);
+          cardEl.classList.remove("unselected");
+          checkEl.textContent = "✓";
+          checkEl.classList.remove("bg-white");
+          checkEl.classList.add("bg-[#e2ff00]");
+        } else {
+          selectedIndices.delete(idx);
+          cardEl.classList.add("unselected");
+          checkEl.textContent = "";
+          checkEl.classList.remove("bg-[#e2ff00]");
+          checkEl.classList.add("bg-white");
+        }
+      });
+      updateVpCalculator();
+    }
+
     async function pasteAndCheck() {
       const statusBox = document.getElementById("statusBox");
       try {
@@ -427,6 +524,9 @@
     }
 
     function renderStoreData(data) {
+      currentItems = data.items || [];
+      selectedIndices = new Set(currentItems.map((_, i) => i)); // Default pilih semua
+
       document.getElementById("navDot").classList.remove("bg-neutral-300");
       document.getElementById("navDot").classList.add("bg-[#e2ff00]");
 
@@ -448,20 +548,42 @@
 
       document.getElementById("accountHeader").textContent = data.gameName.toUpperCase();
 
-      // Jalankan timer real-time berdasarkan waktu reset
       const resetAt = data.expiresAt || (Date.now() + data.remainingSeconds * 1000);
       startLiveTimer(resetAt);
 
-      document.getElementById("itemCount").textContent = "4 / 4 OFFERS LOADED";
+      document.getElementById("itemCount").textContent = "4 / 4 LOADED";
+      document.getElementById("vpCalcBar").classList.remove("hidden");
+      document.getElementById("vpCalcBar").classList.add("flex");
 
       const skinsGrid = document.getElementById("skinsGrid");
       skinsGrid.innerHTML = "";
-      data.items.forEach((item, idx) => {
+      currentItems.forEach((item, idx) => {
+        const tier = getTierInfo(item);
         skinsGrid.innerHTML += `
-          <div class="skin-card p-6 flex flex-col justify-between min-h-[290px]">
-            <div class="flex items-center justify-between">
-              <span class="text-[11px] font-bold">DROP // 0${idx + 1}</span>
-              <span class="bg-[#e2ff00] border border-black px-2 py-0.5 text-[10px] font-bold">IN STOCK</span>
+          <div id="skin-card-${idx}" class="skin-card p-6 flex flex-col justify-between min-h-[300px]">
+            <div class="flex items-center justify-between gap-2">
+              <div class="flex items-center gap-2">
+                <span class="text-[11px] font-bold">0${idx + 1}</span>
+                <span
+                  style="background-color: ${tier.bg}; color: ${tier.text};"
+                  class="border border-black px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider"
+                >
+                  ${tier.name}
+                </span>
+              </div>
+
+              <button
+                type="button"
+                onclick="toggleSkinSelection(${idx})"
+                title="Masukkan / keluarkan dari kalkulator VP"
+                class="flex items-center gap-1.5 text-[10px] font-bold uppercase cursor-pointer group"
+              >
+                <span class="text-neutral-500 group-hover:text-black">CALC</span>
+                <span
+                  id="skin-check-${idx}"
+                  class="w-4 h-4 border-[1.5px] border-black bg-[#e2ff00] flex items-center justify-center text-[11px] font-bold leading-none"
+                >✓</span>
+              </button>
             </div>
 
             <div class="my-6 h-32 flex items-center justify-center">
@@ -472,12 +594,13 @@
 
             <div class="pt-3 border-t border-black/15">
               <p class="font-bold text-xs uppercase tracking-tight text-black leading-snug">${item.name}</p>
-              <p class="text-xs font-bold text-neutral-700 mt-1">${item.price} VP</p>
+              <p class="text-xs font-bold text-neutral-700 mt-1">${Number(item.price).toLocaleString("en-US")} VP</p>
             </div>
           </div>
         `;
       });
 
+      updateVpCalculator();
       document.getElementById("emptyGrid").classList.add("hidden");
       skinsGrid.classList.remove("hidden");
     }
@@ -485,6 +608,8 @@
     function handleLogout() {
       sessionStorage.removeItem(SESSION_KEY);
       if (countdownInterval) clearInterval(countdownInterval);
+      currentItems = [];
+      selectedIndices.clear();
       document.getElementById("redirectUrl").value = "";
 
       document.getElementById("navDot").classList.add("bg-neutral-300");
@@ -509,6 +634,8 @@
       document.getElementById("accountHeader").textContent = "READY TO WEAR // AGENT";
       document.getElementById("timerText").textContent = "--H --M --S";
       document.getElementById("itemCount").textContent = "WAITING FOR TOKEN";
+      document.getElementById("vpCalcBar").classList.add("hidden");
+      document.getElementById("vpCalcBar").classList.remove("flex");
       document.getElementById("skinsGrid").classList.add("hidden");
       document.getElementById("emptyGrid").classList.remove("hidden");
 
@@ -542,7 +669,6 @@
 
         if (!data.success) throw new Error(data.error || "Gagal mengambil data store.");
 
-        // Simpan timestamp kedaluwarsa persis agar live timer tetap akurat saat di-refresh
         data.expiresAt = Date.now() + data.remainingSeconds * 1000;
         sessionStorage.setItem(SESSION_KEY, JSON.stringify(data));
         renderStoreData(data);
