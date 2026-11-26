@@ -54,6 +54,10 @@
       transform: translate(2px, 2px);
       box-shadow: 1px 1px 0px var(--ink);
     }
+    .brutal-modal {
+      border: 2px solid var(--ink);
+      box-shadow: 8px 8px 0px var(--ink);
+    }
     .skin-card {
       background: #ffffff;
       transition: background-color 0.18s ease;
@@ -95,7 +99,6 @@
       </div>
 
       <div class="flex items-stretch">
-        <!-- TOMBOL LOGOUT: HIDDEN SAAT BELUM LOGIN -->
         <button
           id="navLogoutBtn"
           onclick="handleLogout()"
@@ -140,7 +143,9 @@
 
         <div class="mt-8 pt-5 border-t border-black/20 flex flex-wrap items-center justify-between gap-3 text-[11px] uppercase">
           <span class="font-bold">STATUS: <span id="authStatusText" class="underline text-neutral-500">NOT AUTHENTICATED</span></span>
-          <span class="text-neutral-500">404 PAGE AFTER LOGIN = NORMAL</span>
+          <button onclick="openGuideModal()" class="text-black font-bold underline hover:bg-[#e2ff00] px-1 cursor-pointer">
+            404 PAGE AFTER LOGIN? SEE GUIDE [?]
+          </button>
         </div>
       </div>
 
@@ -151,10 +156,18 @@
           <div class="mb-7">
             <div class="flex items-center justify-between mb-2">
               <span class="text-xs font-bold uppercase tracking-wider bg-black text-white px-2 py-0.5">STEP 01 // RIOT AUTH</span>
-              <span id="step1Badge" class="text-[10px] uppercase text-neutral-600">STEP REQUIRED</span>
+              <div class="flex items-center gap-2">
+                <button
+                  onclick="openGuideModal()"
+                  class="bg-white border border-black px-1.5 py-0.5 text-[10px] font-bold uppercase hover:bg-[#e2ff00] cursor-pointer"
+                >
+                  ? GUIDE
+                </button>
+                <span id="step1Badge" class="text-[10px] uppercase text-neutral-600">STEP REQUIRED</span>
+              </div>
             </div>
             <p class="text-xs text-neutral-800 mb-3 leading-relaxed">
-              Klik tombol di bawah untuk login Riot. Setelah muncul halaman <strong>404 Page Not Found</strong>, salin seluruh link di address bar.
+              Login Riot di tab baru. Setelah muncul halaman <strong>404 Page Not Found</strong>, salin link di address bar lalu klik <strong>Paste & Check</strong>.
             </p>
             <div class="flex gap-2">
               <a
@@ -166,7 +179,6 @@
               >
                 LOGIN VIA RIOT ↗
               </a>
-              <!-- TOMBOL LOGOUT PANEL: HIDDEN SAAT BELUM LOGIN -->
               <button
                 id="panelLogoutBtn"
                 onclick="handleLogout()"
@@ -182,15 +194,26 @@
           <div>
             <div class="flex items-center justify-between mb-2">
               <span class="text-xs font-bold uppercase tracking-wider bg-black text-white px-2 py-0.5">STEP 02 // PASTE REDIRECT URL</span>
-              <span class="text-[10px] uppercase text-neutral-600">ACCESS TOKEN</span>
+              <span class="text-[10px] uppercase text-neutral-600">1-CLICK CLIPBOARD</span>
             </div>
 
-            <input
-              id="redirectUrl"
-              type="text"
-              placeholder="https://playvalorant.com/id-id/opt_in/#access_token=..."
-              class="w-full bg-white border-[1.5px] border-black px-3.5 py-3 text-xs text-black placeholder:text-neutral-400 focus:outline-none focus:bg-[#faffd6] mb-3"
-            />
+            <!-- INPUT + TOMBOL PASTE OTOMATIS -->
+            <div class="flex items-stretch mb-3">
+              <input
+                id="redirectUrl"
+                type="text"
+                placeholder="https://playvalorant.com/.../#access_token=..."
+                class="flex-1 min-w-0 bg-white border-[1.5px] border-black px-3 py-3 text-xs text-black placeholder:text-neutral-400 focus:outline-none focus:bg-[#faffd6]"
+              />
+              <button
+                type="button"
+                onclick="pasteAndCheck()"
+                title="Tempel link dari clipboard & langsung cek store"
+                class="bg-[#e2ff00] hover:bg-black hover:text-[#e2ff00] transition-colors border-y-[1.5px] border-r-[1.5px] border-black px-3 text-[11px] font-bold uppercase tracking-wider whitespace-nowrap cursor-pointer"
+              >
+                PASTE & CHECK
+              </button>
+            </div>
 
             <div class="flex flex-col sm:flex-row gap-2.5">
               <select
@@ -228,7 +251,7 @@
       </div>
       <div class="text-xs uppercase tracking-widest flex items-center gap-3">
         <span class="text-neutral-400">NEXT RESET:</span>
-        <span id="timerText" class="bg-[#e2ff00] text-black font-bold px-2.5 py-0.5">--H --M</span>
+        <span id="timerText" class="bg-[#e2ff00] text-black font-bold px-2.5 py-0.5 tabular-nums">--H --M --S</span>
       </div>
     </section>
 
@@ -289,12 +312,121 @@
     </div>
   </footer>
 
+  <!-- MODAL PANDUAN VISUAL 3 LANGKAH -->
+  <div id="guideModal" onclick="closeGuideModal(event)" class="hidden fixed inset-0 z-50 bg-black/70 backdrop-blur-[2px] flex items-center justify-center p-4">
+    <div class="brutal-modal bg-[#f7f7f5] max-w-xl w-full p-6 sm:p-8 relative" onclick="event.stopPropagation()">
+      <div class="flex items-center justify-between border-b-[1.5px] border-black pb-3 mb-5">
+        <span class="font-display text-2xl uppercase tracking-wide">HOW TO EXTRACT TOKEN // 3 STEPS</span>
+        <button onclick="closeGuideModal()" class="bg-black text-white hover:bg-[#ff4d4d] hover:text-black px-2.5 py-1 text-xs font-bold uppercase cursor-pointer">
+          ✕ CLOSE
+        </button>
+      </div>
+
+      <div class="space-y-4 text-xs">
+        <!-- STEP 1 VISUAL -->
+        <div class="bg-white border-[1.5px] border-black p-3.5">
+          <div class="flex items-center justify-between mb-1.5">
+            <span class="bg-[#e2ff00] border border-black px-2 py-0.5 font-bold">01 // LOGIN AKUN RIOT</span>
+            <span class="text-[10px] text-neutral-500">TAB BARU</span>
+          </div>
+          <p class="text-neutral-700 leading-relaxed">
+            Klik tombol <strong>LOGIN VIA RIOT ↗</strong> lalu masukkan Username & Password akun Valorant kamu seperti biasa.
+          </p>
+        </div>
+
+        <!-- STEP 2 VISUAL (MOCKUP BROWSER 404) -->
+        <div class="bg-white border-[1.5px] border-black p-3.5">
+          <div class="flex items-center justify-between mb-2">
+            <span class="bg-[#e2ff00] border border-black px-2 py-0.5 font-bold">02 // SALIN URL DI HALAMAN 404</span>
+            <span class="text-[10px] text-neutral-500">INI NORMAL!</span>
+          </div>
+          <!-- Mockup Address Bar -->
+          <div class="border border-black bg-[#e8eef5] p-2 mb-2">
+            <div class="flex items-center gap-1.5 mb-1.5">
+              <span class="w-2 h-2 rounded-full bg-black"></span>
+              <span class="w-2 h-2 rounded-full bg-neutral-400"></span>
+              <span class="text-[9px] font-bold uppercase text-neutral-600">ADDRESS BAR BROWSER (COPY SEMUA)</span>
+            </div>
+            <div class="bg-white border border-black px-2 py-1.5 text-[10px] font-mono truncate select-all">
+              playvalorant.com/id-id/opt_in/<span class="bg-[#e2ff00] font-bold">#access_token=eyJraWQi...</span>
+            </div>
+          </div>
+          <p class="text-neutral-700 leading-relaxed">
+            Riot akan menampilkan layar merah <strong>404 PAGE NOT FOUND</strong>. Jangan panik — token kamu ada di link atas. Klik address bar lalu <strong>Copy</strong> seluruh URL-nya.
+          </p>
+        </div>
+
+        <!-- STEP 3 VISUAL -->
+        <div class="bg-white border-[1.5px] border-black p-3.5">
+          <div class="flex items-center justify-between mb-1.5">
+            <span class="bg-[#e2ff00] border border-black px-2 py-0.5 font-bold">03 // KLIK "PASTE & CHECK"</span>
+            <span class="text-[10px] text-neutral-500">OTOMATIS</span>
+          </div>
+          <p class="text-neutral-700 leading-relaxed">
+            Kembali ke halaman ini, lalu cukup tekan tombol kuning <strong>PASTE & CHECK</strong>. Sistem otomatis mengekstrak token dan memuat 4 skin harianmu.
+          </p>
+        </div>
+      </div>
+
+      <button onclick="closeGuideModal()" class="brutal-btn w-full mt-5 bg-black text-white font-bold text-xs uppercase tracking-widest py-3 cursor-pointer">
+        PAHAM, LANJUTKAN →
+      </button>
+    </div>
+  </div>
+
   <script>
     const API_URL = "https://byebyeval-api.afsamifzal.workers.dev";
     const SESSION_KEY = "byebyeval_last_session";
+    let countdownInterval = null;
+
+    // Modal Controls
+    function openGuideModal() {
+      document.getElementById("guideModal").classList.remove("hidden");
+    }
+    function closeGuideModal(e) {
+      if (!e || e.target.id === "guideModal") {
+        document.getElementById("guideModal").classList.add("hidden");
+      }
+    }
+
+    // Live Countdown Timer (Detik demi detik)
+    function startLiveTimer(targetTimestampMs) {
+      if (countdownInterval) clearInterval(countdownInterval);
+
+      function updateTick() {
+        const diffSec = Math.max(0, Math.floor((targetTimestampMs - Date.now()) / 1000));
+        const hrs = String(Math.floor(diffSec / 3600)).padStart(2, "0");
+        const mins = String(Math.floor((diffSec % 3600) / 60)).padStart(2, "0");
+        const secs = String(diffSec % 60).padStart(2, "0");
+        document.getElementById("timerText").textContent = `${hrs}H ${mins}M ${secs}S`;
+
+        if (diffSec === 0) clearInterval(countdownInterval);
+      }
+
+      updateTick();
+      countdownInterval = setInterval(updateTick, 1000);
+    }
+
+    // Auto-Paste dari Clipboard + Langsung Inspect
+    async function pasteAndCheck() {
+      const statusBox = document.getElementById("statusBox");
+      try {
+        const clipText = await navigator.clipboard.readText();
+        if (!clipText || !clipText.trim()) {
+          statusBox.textContent = "ERROR // CLIPBOARD KOSONG. SALIN URL DARI HALAMAN 404 RIOT TERLEBIH DAHULU.";
+          statusBox.classList.remove("hidden");
+          return;
+        }
+        document.getElementById("redirectUrl").value = clipText.trim();
+        await checkStore();
+      } catch (err) {
+        statusBox.textContent = "INFO // BROWSER MEMBLOKIR AKSES CLIPBOARD OTOMATIS. SILAKAN PASTE MANUAL DI KOTAK INPUT LALU KLIK INSPECT STORE.";
+        statusBox.classList.remove("hidden");
+        document.getElementById("redirectUrl").focus();
+      }
+    }
 
     function renderStoreData(data) {
-      // Ubah UI ke mode Logged In
       document.getElementById("navDot").classList.remove("bg-neutral-300");
       document.getElementById("navDot").classList.add("bg-[#e2ff00]");
 
@@ -307,7 +439,6 @@
       document.getElementById("navLoginBtn").textContent = "SWITCH ACCOUNT ↗";
       document.getElementById("panelLoginBtn").textContent = "SWITCH ACCOUNT ↗";
 
-      // Tampilkan tombol Logout
       const navLogout = document.getElementById("navLogoutBtn");
       const panelLogout = document.getElementById("panelLogoutBtn");
       navLogout.classList.remove("hidden");
@@ -315,11 +446,12 @@
       panelLogout.classList.remove("hidden");
       panelLogout.classList.add("flex");
 
-      // Isi banner & grid skin
       document.getElementById("accountHeader").textContent = data.gameName.toUpperCase();
-      const hrs = Math.floor(data.remainingSeconds / 3600);
-      const mins = Math.floor((data.remainingSeconds % 3600) / 60);
-      document.getElementById("timerText").textContent = `${hrs}H ${mins}M`;
+
+      // Jalankan timer real-time berdasarkan waktu reset
+      const resetAt = data.expiresAt || (Date.now() + data.remainingSeconds * 1000);
+      startLiveTimer(resetAt);
+
       document.getElementById("itemCount").textContent = "4 / 4 OFFERS LOADED";
 
       const skinsGrid = document.getElementById("skinsGrid");
@@ -351,8 +483,8 @@
     }
 
     function handleLogout() {
-      // Hapus sesi lokal & kembalikan UI ke kondisi awal
       sessionStorage.removeItem(SESSION_KEY);
+      if (countdownInterval) clearInterval(countdownInterval);
       document.getElementById("redirectUrl").value = "";
 
       document.getElementById("navDot").classList.add("bg-neutral-300");
@@ -375,12 +507,11 @@
       panelLogout.classList.remove("flex");
 
       document.getElementById("accountHeader").textContent = "READY TO WEAR // AGENT";
-      document.getElementById("timerText").textContent = "--H --M";
+      document.getElementById("timerText").textContent = "--H --M --S";
       document.getElementById("itemCount").textContent = "WAITING FOR TOKEN";
       document.getElementById("skinsGrid").classList.add("hidden");
       document.getElementById("emptyGrid").classList.remove("hidden");
 
-      // Buka halaman logout resmi Riot di tab baru
       window.open("https://auth.riotgames.com/logout", "_blank", "noopener,noreferrer");
     }
 
@@ -411,6 +542,8 @@
 
         if (!data.success) throw new Error(data.error || "Gagal mengambil data store.");
 
+        // Simpan timestamp kedaluwarsa persis agar live timer tetap akurat saat di-refresh
+        data.expiresAt = Date.now() + data.remainingSeconds * 1000;
         sessionStorage.setItem(SESSION_KEY, JSON.stringify(data));
         renderStoreData(data);
         document.getElementById("catalogSection").scrollIntoView({ behavior: "smooth" });
@@ -423,7 +556,6 @@
       }
     }
 
-    // Pulihkan state jika tab di-refresh
     window.addEventListener("DOMContentLoaded", () => {
       const saved = sessionStorage.getItem(SESSION_KEY);
       if (saved) {
