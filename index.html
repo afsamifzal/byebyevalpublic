@@ -27,7 +27,6 @@
     .font-editorial {
       font-family: 'Syne', sans-serif;
     }
-    /* Running Marquee Ticker */
     .marquee-wrap {
       overflow: hidden;
       white-space: nowrap;
@@ -42,7 +41,6 @@
       0% { transform: translateX(0); }
       100% { transform: translateX(-50%); }
     }
-    /* Brutalist Shadow & Hover */
     .brutal-btn {
       border: 1.5px solid var(--ink);
       box-shadow: 4px 4px 0px var(--ink);
@@ -96,14 +94,25 @@
         <span>03 / INSPECT DROP</span>
       </div>
 
-      <a
-        href="https://auth.riotgames.com/authorize?redirect_uri=https%3A%2F%2Fplayvalorant.com%2Fopt_in&client_id=play-valorant-web-prod&response_type=token%20id_token&nonce=1&scope=account%20openid"
-        target="_blank"
-        rel="noopener noreferrer"
-        class="bg-black text-white hover:bg-[#e2ff00] hover:text-black transition-colors px-5 sm:px-7 py-3 text-xs font-bold uppercase tracking-wider flex items-center gap-2 border-l-[1.5px] border-black"
-      >
-        RIOT LOGIN ↗
-      </a>
+      <div class="flex items-stretch">
+        <a
+          href="https://auth.riotgames.com/logout"
+          target="_blank"
+          rel="noopener noreferrer"
+          title="Logout dari sesi Riot di browser"
+          class="bg-white text-black hover:bg-neutral-200 transition-colors px-4 py-3 text-xs font-bold uppercase tracking-wider flex items-center border-l-[1.5px] border-black"
+        >
+          LOGOUT
+        </a>
+        <a
+          href="https://auth.riotgames.com/authorize?redirect_uri=https%3A%2F%2Fplayvalorant.com%2Fopt_in&client_id=play-valorant-web-prod&response_type=token%20id_token&nonce=1&scope=account%20openid&prompt=login"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="bg-black text-white hover:bg-[#e2ff00] hover:text-black transition-colors px-5 sm:px-7 py-3 text-xs font-bold uppercase tracking-wider flex items-center gap-2 border-l-[1.5px] border-black"
+        >
+          RIOT LOGIN ↗
+        </a>
+      </div>
     </div>
   </header>
 
@@ -141,19 +150,30 @@
           <div class="mb-7">
             <div class="flex items-center justify-between mb-2">
               <span class="text-xs font-bold uppercase tracking-wider bg-black text-white px-2 py-0.5">STEP 01 // RIOT AUTH</span>
-              <span class="text-[10px] uppercase text-neutral-600">POPUP TAB</span>
+              <span class="text-[10px] uppercase text-neutral-600">FORCE LOGIN</span>
             </div>
             <p class="text-xs text-neutral-800 mb-3 leading-relaxed">
-              Klik tombol di bawah untuk login Riot. Setelah muncul halaman <strong>404 Page Not Found</strong>, salin seluruh link di address bar browser.
+              Klik tombol di bawah untuk login (bisa langsung ganti akun). Setelah muncul halaman <strong>404 Page Not Found</strong>, salin seluruh link di address bar.
             </p>
-            <a
-              href="https://auth.riotgames.com/authorize?redirect_uri=https%3A%2F%2Fplayvalorant.com%2Fopt_in&client_id=play-valorant-web-prod&response_type=token%20id_token&nonce=1&scope=account%20openid"
-              target="_blank"
-              rel="noopener noreferrer"
-              class="brutal-btn block w-full text-center bg-[#e2ff00] text-black font-bold text-xs uppercase tracking-widest py-3 px-4"
-            >
-              OPEN RIOT LOGIN PORTAL ↗
-            </a>
+            <div class="flex gap-2">
+              <a
+                href="https://auth.riotgames.com/authorize?redirect_uri=https%3A%2F%2Fplayvalorant.com%2Fopt_in&client_id=play-valorant-web-prod&response_type=token%20id_token&nonce=1&scope=account%20openid&prompt=login"
+                target="_blank"
+                rel="noopener noreferrer"
+                class="brutal-btn flex-1 text-center bg-[#e2ff00] text-black font-bold text-xs uppercase tracking-widest py-3 px-4"
+              >
+                LOGIN / SWITCH ACCOUNT ↗
+              </a>
+              <a
+                href="https://auth.riotgames.com/logout"
+                target="_blank"
+                rel="noopener noreferrer"
+                title="Clear sesi login Riot di browser"
+                class="brutal-btn bg-white text-black font-bold text-xs uppercase tracking-wider py-3 px-3 flex items-center justify-center"
+              >
+                LOGOUT
+              </a>
+            </div>
           </div>
 
           <!-- STEP 02 -->
@@ -197,7 +217,7 @@
       </div>
     </section>
 
-    <!-- DARK EDITORIAL BANNER (MIRIP "COLLUSION X RAYAN SELECTED") -->
+    <!-- DARK EDITORIAL BANNER -->
     <section class="bg-[#111111] text-white border-b-[1.5px] border-black px-6 py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
       <div class="font-display text-2xl sm:text-3xl tracking-wide uppercase">
         <span class="text-[#e2ff00]">DAILY ROTATION</span>
@@ -299,14 +319,12 @@
 
         if (!data.success) throw new Error(data.error || "Gagal mengambil data store.");
 
-        // Update Header & Timer
         document.getElementById("accountHeader").textContent = data.gameName.toUpperCase();
         const hrs = Math.floor(data.remainingSeconds / 3600);
         const mins = Math.floor((data.remainingSeconds % 3600) / 60);
         document.getElementById("timerText").textContent = `${hrs}H ${mins}M`;
         document.getElementById("itemCount").textContent = `4 / 4 OFFERS LOADED`;
 
-        // Render 4 Skin Cards
         skinsGrid.innerHTML = "";
         data.items.forEach((item, idx) => {
           skinsGrid.innerHTML += `
